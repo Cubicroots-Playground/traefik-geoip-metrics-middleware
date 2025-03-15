@@ -2,7 +2,7 @@ displayName: Demo Plugin
 type: middleware
 iconPath: .assets/icon.png
 
-import: github.com/traefik/plugindemo
+import: github.com/Cubicroots-Playground/traefik-geoip-metrics-middleware
 
 summary: '[Demo] Add Request Header'
 

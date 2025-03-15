@@ -1,4 +1,4 @@
-package plugindemo_test
+package traefik_geoip_metrics_middleware_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/traefik/plugindemo"
+	plugindemo "github.com/Cubicroots-Playground/traefik-geoip-metrics-middleware"
 )
 
 func TestDemo(t *testing.T) {
