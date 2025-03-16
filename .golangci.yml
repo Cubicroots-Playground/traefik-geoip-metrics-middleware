@@ -8,6 +8,7 @@ linters:
     - paralleltest # This project is not using parallel testing
     - nlreturn # Only formatting
     - ireturn # This project sometimes uses interfaces
+    - err113 # Do not agree
     - gochecknoglobals # This project still uses some global variables
     - exhaustruct # This projects relies on using only parts of structs
     - errorlint # This project has not yet moved to static errors
@@ -25,10 +26,12 @@ linters:
     - testpackage # Naming
     - exhaustive # To many false positives
     - interfacebloat # Do not agree
+    - mnd # Do not agree
     # deprecated
     - rowserrcheck
     - sqlclosecheck
     - wastedassign
+    - inamedparam
     - tenv
 
 linters-settings:
