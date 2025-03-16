@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync/atomic"
 	"text/template"
 )
@@ -62,8 +64,25 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 func (a *Demo) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	a.requestCnt.Add(1)
+	headers := a.headers
 
-	for key, value := range a.headers {
+	remoteAddr := strings.Split(req.RemoteAddr, ":")[0]
+	headers["GEOIP_IP"] = remoteAddr
+
+	resp, err := http.Post("http://geoip-api:8080", "", bytes.NewReader([]byte(remoteAddr)))
+	if err != nil {
+		os.Stdout.WriteString("failed to query geoip API: " + err.Error())
+	} else {
+		defer resp.Body.Close()
+		country, err := io.ReadAll(resp.Body)
+		if err != nil {
+			os.Stdout.WriteString("failed to read geoip API response: " + err.Error())
+		} else if len(string(country)) > 0 {
+			headers["GEOIP_COUNTRY_ISO"] = string(country)
+		}
+	}
+
+	for key, value := range headers {
 		tmpl, err := a.template.Parse(value)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
