@@ -5,11 +5,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	geoipmiddleware "github.com/Cubicroots-Playground/traefik-geoip-metrics-middleware"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGeoIPMiddleware(t *testing.T) {
@@ -21,21 +20,30 @@ func TestGeoIPMiddleware(t *testing.T) {
 	next := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 
 	middleware, err := geoipmiddleware.New(ctx, next, cfg, "geoip-plugin")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	// Execute.
 	recorder := httptest.NewRecorder()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost", nil)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	middleware.ServeHTTP(recorder, req)
 
 	// Assert & clean up.
-	assert.Equal(t, "DE", req.Header.Get("Geoip_country_iso"))
+	if req.Header.Get("Geoip_country_iso") != "DE" {
+		t.Errorf("expected DE got '%s'", req.Header.Get("Geoip_country_iso"))
+	}
 	assertMetricForCountry(t, "DE")
 
 	geoIPMiddleware := middleware.(*geoipmiddleware.GeoIPMiddleware)
-	require.NoError(t, geoIPMiddleware.Close())
+	err = geoIPMiddleware.Close()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 }
 
 func TestGeoIPMiddleware_WithInvalidGeoIPAPI(t *testing.T) {
@@ -47,31 +55,46 @@ func TestGeoIPMiddleware_WithInvalidGeoIPAPI(t *testing.T) {
 	next := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 
 	middleware, err := geoipmiddleware.New(ctx, next, cfg, "geoip-plugin")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	// Execute.
 	recorder := httptest.NewRecorder()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost", nil)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	middleware.ServeHTTP(recorder, req)
 
 	// Assert & clean up.
-	assert.Empty(t, req.Header.Get("Geoip_country_iso"))
+	if req.Header.Get("Geoip_country_iso") != "" {
+		t.Errorf("expected empty got '%s'", req.Header.Get("Geoip_country_iso"))
+	}
 
 	geoIPMiddleware := middleware.(*geoipmiddleware.GeoIPMiddleware)
-	require.NoError(t, geoIPMiddleware.Close())
+	err = geoIPMiddleware.Close()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 }
 
 func assertMetricForCountry(t *testing.T, country string) {
 	t.Helper()
 
 	resp, err := http.Get("http://127.0.0.1:2112/metrics")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	defer resp.Body.Close()
 
-	assert.Contains(t, string(body), `traefik_geoip_requests_total{country_iso="`+country+`"} `)
+	if !strings.Contains(string(body), `traefik_geoip_requests_total{country_iso="`+country+`"} `) {
+		t.Errorf("missing metric for country '%s'", country)
+	}
 }
