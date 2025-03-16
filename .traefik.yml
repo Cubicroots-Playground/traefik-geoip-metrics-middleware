@@ -1,12 +1,11 @@
-displayName: Demo Plugin
+displayName: GeoIP Metrics
 type: middleware
 iconPath: .assets/icon.png
 
 import: github.com/Cubicroots-Playground/traefik-geoip-metrics-middleware
 
-summary: '[Demo] Add Request Header'
+summary: 'Exposes GeoIP metrics in prometheus format.'
 
 testData:
-  Headers:
-    X-Demo: test
-    X-URL: '{{URL}}'
+  geoipApi: "http://geoip-api:8080"
+  metricsPort: 2112
