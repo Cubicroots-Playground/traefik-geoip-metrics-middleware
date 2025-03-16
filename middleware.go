@@ -4,13 +4,11 @@ package traefik_geoip_metrics_middleware
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"text/template"
 	"time"
 )
@@ -35,10 +33,6 @@ type GeoIPMiddleware struct {
 	name     string
 	template *template.Template
 	config   *Config
-	srv      *http.Server
-
-	metricRequestsPerCountry     map[string]uint64
-	metricRequestsPerCountryLock sync.Mutex
 }
 
 // New created a new Demo plugin.
@@ -48,28 +42,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		name:     name,
 		template: template.New("demo").Delims("[[", "]]"),
 		config:   config,
-
-		metricRequestsPerCountry: map[string]uint64{},
 	}
-
-	// Start metrics server.
-	listenAddr := fmt.Sprintf(":%d", a.config.MetricsPort)
-	mux := http.NewServeMux()
-	a.srv = &http.Server{
-		Addr:              listenAddr,
-		Handler:           mux,
-		ReadTimeout:       time.Second * 10,
-		ReadHeaderTimeout: time.Second * 10,
-	}
-	mux.Handle("/metrics", http.HandlerFunc(a.MetricsHander))
-	go func() {
-		os.Stdout.WriteString("serving metrics at " + listenAddr + "/metrics\n")
-
-		err := a.srv.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			os.Stdout.WriteString("failed to serve metrics: " + err.Error() + "\n")
-		}
-	}()
 
 	return a, nil
 }
@@ -103,16 +76,6 @@ func (a *GeoIPMiddleware) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	a.next.ServeHTTP(rw, req)
 }
 
-// Close shuts down the middleware.
-func (a *GeoIPMiddleware) Close() error {
-	err := a.srv.Close()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
-
-	return nil
-}
-
 func (a *GeoIPMiddleware) getGeoIPHeaders(req *http.Request) (map[string]string, error) {
 	headers := map[string]string{}
 	remoteAddr := strings.Split(req.RemoteAddr, ":")[0]
@@ -139,10 +102,6 @@ func (a *GeoIPMiddleware) getGeoIPHeaders(req *http.Request) (map[string]string,
 		headers["GEOIP_COUNTRY_ISO"] = string(country)
 	}
 	headers["GEOIP_IP"] = remoteAddr
-
-	a.metricRequestsPerCountryLock.Lock()
-	a.metricRequestsPerCountry[string(country)]++
-	a.metricRequestsPerCountryLock.Unlock()
 
 	return headers, nil
 }

@@ -28,11 +28,15 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.middlewares.my-plugindemo.plugin.plugindemo.geoipApi=http://geoip-api:8080"
-      - "traefik.http.middlewares.my-plugindemo.plugin.plugindemo.metricsPort=2112"
       - "traefik.http.routers.whoami.middlewares=my-plugindemo"
 
   geoip-api:
-    image: cubicrootxyz/geoip-api:v0.0.1
+    image: cubicrootxyz/geoip-api:v0.0.2
     container_name: geoip-api
     volumes:
       - "./dbip-country-lite.mmdb:/run/geodata.mmdb"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.metrics.rule=Host(`metrics.localhost`)"
+      - "traefik.http.routers.metrics.entrypoints=web"
+      - "traefik.http.services.my-metrics.loadbalancer.server.port=8080"
