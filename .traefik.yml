@@ -1,11 +1,9 @@
-displayName: GeoIP Metrics
+displayName: GeoIP Metrics & Country Header
 type: middleware
-iconPath: .assets/icon.png
 
 import: github.com/Cubicroots-Playground/traefik-geoip-metrics-middleware
 
-summary: 'Exposes GeoIP metrics in prometheus format.'
+summary: 'Sends source IPs to a sidecar that exposes GeoIP based metrics and injects the country code as a header.'
 
 testData:
   geoipApi: "http://geoip-api:8080"
-  metricsPort: 2112
